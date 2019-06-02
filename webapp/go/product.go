@@ -56,7 +56,7 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 
 		// select comment count for the product
 		var cnt int
-		cnterr := db.QueryRow("SELECT count(*) as count FROM comments WHERE product_id = ?", p.ID).Scan(&cnt)
+		cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", p.ID).Scan(&cnt)
 		if cnterr != nil {
 			cnt = 0
 		}
@@ -95,7 +95,7 @@ func (p *Product) isBought(uid int) bool {
 	log.Print(uid)
 	log.Print(p.ID)
 	err := db.QueryRow(
-		"SELECT count(*) as count FROM histories WHERE product_id = ? AND user_id = ?",
+		"SELECT count(1) as count FROM histories WHERE product_id = ? AND user_id = ?",
 		p.ID, uid,
 	).Scan(&count)
 	if err != nil {

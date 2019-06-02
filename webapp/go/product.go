@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 // Product Model
 type Product struct {
@@ -49,7 +52,7 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 	}
 
 	product_ids := []int{}
-	product_with_id := make(map[int]ProductWithComments)
+	products := []ProductWithComments{}
 
 	defer rows.Close()
 	for rows.Next() {
@@ -68,7 +71,7 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 			product_ids = append(product_ids, p.ID)
 		}
 
-		product_with_id[p.ID] = p
+		products = append(products, p)
 	}
 
 	product_comments := make(map[int][]CommentWriter)
@@ -90,13 +93,11 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 		}
 	}
 
-	products := []ProductWithComments{}
-	for key, value := range product_with_id {
-		newValue := value
-		newValue.Comments = product_comments[key]
-
-		products = append(products, newValue)
+	for _, p := range products {
+		p.Comments = product_comments[p.ID]
 	}
+
+	fmt.Println(products)
 
 	return products
 }

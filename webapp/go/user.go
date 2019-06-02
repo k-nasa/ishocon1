@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/contrib/sessions"
+	ca "github.com/patrickmn/go-cache"
 )
 
 // User model
@@ -95,6 +96,20 @@ func (u *User) CreateComment(pid string, content string) {
 	db.Exec(
 		"INSERT INTO comments (product_id, user_id, content, created_at) VALUES (?, ?, ?, ?)",
 		pid, u.ID, content, time.Now())
+
+	var cnt int
+	data, found := cache.Get("product_count_" + pid)
+	if !found {
+		cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", pid).Scan(&cnt)
+		if cnterr != nil {
+			cnt = 0
+		}
+	} else {
+		cnt = data.(int) + 1
+	}
+
+	cache.Set("product_count_"+pid, cnt, ca.DefaultExpiration)
+	cache.Delete("cWriters_" + pid)
 }
 
 func (u *User) UpdateLastLogin() {

@@ -1,6 +1,10 @@
 package main
 
-import "log"
+import (
+	ca "github.com/patrickmn/go-cache"
+	"log"
+	"strconv"
+)
 
 // Product Model
 type Product struct {
@@ -54,38 +58,63 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 		p := ProductWithComments{}
 		err = rows.Scan(&p.ID, &p.Name, &p.Description, &p.ImagePath, &p.Price, &p.CreatedAt)
 
-		// select comment count for the product
 		var cnt int
-		cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", p.ID).Scan(&cnt)
-		if cnterr != nil {
-			cnt = 0
-		}
+		cnt = cachedProductCommentCount(p.ID)
 		p.CommentCount = cnt
 
 		if cnt > 0 {
-			// select 5 comments and its writer for the product
-			var cWriters []CommentWriter
-
-			subrows, suberr := db.Query("SELECT content ,name FROM comments as c INNER JOIN users as u "+
-				"ON c.user_id = u.id WHERE c.product_id = ? ORDER BY c.created_at DESC LIMIT 5", p.ID)
-			if suberr != nil {
-				subrows = nil
-			}
-
-			defer subrows.Close()
-			for subrows.Next() {
-				var cw CommentWriter
-				subrows.Scan(&cw.Content, &cw.Writer)
-				cWriters = append(cWriters, cw)
-			}
-
-			p.Comments = cWriters
+			p.Comments = cachedWriters(p.ID)
 		}
 
 		products = append(products, p)
 	}
 
 	return products
+}
+
+func cachedWriters(pid int) []CommentWriter {
+	data, found := cache.Get("cWriters_" + strconv.Itoa(pid))
+
+	var cWriters []CommentWriter
+
+	if !found {
+		subrows, suberr := db.Query("SELECT content ,name FROM comments as c INNER JOIN users as u "+
+			"ON c.user_id = u.id WHERE c.product_id = ? ORDER BY c.created_at DESC LIMIT 5", pid)
+		if suberr != nil {
+			subrows = nil
+		}
+
+		defer subrows.Close()
+		for subrows.Next() {
+			var cw CommentWriter
+			subrows.Scan(&cw.Content, &cw.Writer)
+			cWriters = append(cWriters, cw)
+		}
+	} else {
+		cWriters = data.([]CommentWriter)
+	}
+
+	cache.Set("cWriters_"+strconv.Itoa(pid), cWriters, ca.DefaultExpiration)
+
+	return cWriters
+}
+
+func cachedProductCommentCount(id int) int {
+	var cnt int
+	data, found := cache.Get("product_count_" + strconv.Itoa(id))
+
+	if !found {
+		cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", id).Scan(&cnt)
+		if cnterr != nil {
+			cnt = 0
+		}
+	} else {
+		cnt = data.(int)
+	}
+
+	cache.Set("product_count_"+strconv.Itoa(id), cnt, ca.DefaultExpiration)
+
+	return cnt
 }
 
 func (p *Product) isBought(uid int) bool {

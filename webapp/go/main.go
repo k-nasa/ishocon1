@@ -6,15 +6,18 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	ca "github.com/patrickmn/go-cache"
 )
 
 var db *sql.DB
+var cache *ca.Cache
 
 func main() {
 	// database setting
@@ -23,6 +26,8 @@ func main() {
 	dbname := "ishocon1"
 	db, _ = sql.Open("mysql", user+":"+pass+"@/"+dbname)
 	db.SetMaxIdleConns(5)
+
+	cache = ca.New(1*time.Hour, 2*time.Hour)
 
 	r := gin.Default()
 	// load templates

@@ -109,6 +109,7 @@ func (u *User) CreateComment(pid string, content string) {
 	}
 
 	cache.Set("product_count_"+pid, cnt, ca.DefaultExpiration)
+	cache.Delete("cWriters_" + pid)
 }
 
 func (u *User) UpdateLastLogin() {

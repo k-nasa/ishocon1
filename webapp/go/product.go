@@ -1,6 +1,11 @@
 package main
 
-import "log"
+import (
+	"fmt"
+	ca "github.com/patrickmn/go-cache"
+	"log"
+	"strconv"
+)
 
 // Product Model
 type Product struct {
@@ -56,10 +61,20 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 
 		// select comment count for the product
 		var cnt int
-		cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", p.ID).Scan(&cnt)
-		if cnterr != nil {
-			cnt = 0
+		data, found := cache.Get("product_count_" + strconv.Itoa(p.ID))
+
+		if !found {
+			cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", p.ID).Scan(&cnt)
+			if cnterr != nil {
+				cnt = 0
+			}
+		} else {
+			fmt.Println("hit!!")
+			cnt = data.(int)
 		}
+
+		cache.Set("product_count_"+strconv.Itoa(p.ID), cnt, ca.DefaultExpiration)
+
 		p.CommentCount = cnt
 
 		if cnt > 0 {

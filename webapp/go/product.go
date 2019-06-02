@@ -59,22 +59,8 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 		p := ProductWithComments{}
 		err = rows.Scan(&p.ID, &p.Name, &p.Description, &p.ImagePath, &p.Price, &p.CreatedAt)
 
-		// select comment count for the product
 		var cnt int
-		data, found := cache.Get("product_count_" + strconv.Itoa(p.ID))
-
-		if !found {
-			cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", p.ID).Scan(&cnt)
-			if cnterr != nil {
-				cnt = 0
-			}
-		} else {
-			fmt.Println("hit!!")
-			cnt = data.(int)
-		}
-
-		cache.Set("product_count_"+strconv.Itoa(p.ID), cnt, ca.DefaultExpiration)
-
+		cnt = cachedProductCommentCount(p.ID)
 		p.CommentCount = cnt
 
 		if cnt > 0 {
@@ -101,6 +87,25 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 	}
 
 	return products
+}
+
+func cachedProductCommentCount(id int) int {
+	var cnt int
+	data, found := cache.Get("product_count_" + strconv.Itoa(id))
+
+	if !found {
+		cnterr := db.QueryRow("SELECT count(1) as count FROM comments WHERE product_id = ?", id).Scan(&cnt)
+		if cnterr != nil {
+			cnt = 0
+		}
+	} else {
+		fmt.Println("hit!!")
+		cnt = data.(int)
+	}
+
+	cache.Set("product_count_"+strconv.Itoa(id), cnt, ca.DefaultExpiration)
+
+	return cnt
 }
 
 func (p *Product) isBought(uid int) bool {

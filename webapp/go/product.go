@@ -43,11 +43,13 @@ func getProduct(pid int) Product {
 
 func getProductsWithCommentsAt(page int) []ProductWithComments {
 	// select 50 products with offset page*50
-	products := []ProductWithComments{}
 	rows, err := db.Query("SELECT * FROM products ORDER BY id DESC LIMIT 50 OFFSET ?", page*50)
 	if err != nil {
 		return nil
 	}
+
+	product_ids := []int{}
+	product_with_id := make(map[int]ProductWithComments)
 
 	defer rows.Close()
 	for rows.Next() {
@@ -63,28 +65,37 @@ func getProductsWithCommentsAt(page int) []ProductWithComments {
 		p.CommentCount = cnt
 
 		if cnt > 0 {
-			// select 5 comments and its writer for the product
-			var cWriters []CommentWriter
-
-			subrows, suberr := db.Query("SELECT * FROM comments as c INNER JOIN users as u "+
-				"ON c.user_id = u.id WHERE c.product_id = ? ORDER BY c.created_at DESC LIMIT 5", p.ID)
-			if suberr != nil {
-				subrows = nil
-			}
-
-			defer subrows.Close()
-			for subrows.Next() {
-				var i int
-				var s string
-				var cw CommentWriter
-				subrows.Scan(&i, &i, &i, &cw.Content, &s, &i, &cw.Writer, &s, &s, &s)
-				cWriters = append(cWriters, cw)
-			}
-
-			p.Comments = cWriters
+			product_ids = append(product_ids, p.ID)
 		}
 
-		products = append(products, p)
+		product_with_id[p.ID] = p
+	}
+
+	product_comments := make(map[int][]CommentWriter)
+
+	subrows, suberr := db.Query("SELECT product_id, content, name FROM comments as c INNER JOIN users as u "+
+		"ON c.user_id = u.id WHERE c.product_id in (?) ORDER BY c.created_at DESC LIMIT 5", product_ids)
+	if suberr != nil {
+		subrows = nil
+	}
+
+	if subrows != nil {
+		defer subrows.Close()
+		for subrows.Next() {
+			var cw CommentWriter
+			var product_id int
+			subrows.Scan(&product_id, &cw.Content, &cw.Writer)
+
+			product_comments[product_id] = append(product_comments[product_id], cw)
+		}
+	}
+
+	products := []ProductWithComments{}
+	for key, value := range product_with_id {
+		newValue := value
+		newValue.Comments = product_comments[key]
+
+		products = append(products, newValue)
 	}
 
 	return products

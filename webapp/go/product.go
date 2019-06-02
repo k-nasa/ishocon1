@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	ca "github.com/patrickmn/go-cache"
 	"log"
 	"strconv"
@@ -99,7 +98,6 @@ func cachedProductCommentCount(id int) int {
 			cnt = 0
 		}
 	} else {
-		fmt.Println("hit!!")
 		cnt = data.(int)
 	}
 

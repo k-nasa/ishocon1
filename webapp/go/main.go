@@ -63,6 +63,7 @@ func main() {
 		if result {
 			// 認証成功
 			session.Set("uid", user.ID)
+			session.Set("name", user.Name)
 			session.Save()
 
 			c.Redirect(http.StatusSeeOther, "/")
@@ -89,7 +90,7 @@ func main() {
 
 	// GET /
 	r.GET("/", func(c *gin.Context) {
-		cUser := currentUser(sessions.Default(c))
+		cUser := currentUserIDOnly(sessions.Default(c))
 
 		page, err := strconv.Atoi(c.Query("page"))
 		if err != nil {
@@ -123,7 +124,7 @@ func main() {
 
 	// GET /users/:userId
 	r.GET("/users/:userId", func(c *gin.Context) {
-		cUser := currentUser(sessions.Default(c))
+		cUser := currentUserIDOnly(sessions.Default(c))
 
 		uid, _ := strconv.Atoi(c.Param("userId"))
 		user := getUser(uid)
@@ -159,7 +160,7 @@ func main() {
 		product := getProduct(pid)
 		comments := getComments(pid)
 
-		cUser := currentUser(sessions.Default(c))
+		cUser := currentUserIDOnly(sessions.Default(c))
 		bought := product.isBought(cUser.ID)
 
 		r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/product.tmpl")))
@@ -182,7 +183,7 @@ func main() {
 			})
 		} else {
 			// buy product
-			cUser := currentUser(sessions.Default(c))
+			cUser := currentUserIDOnly(sessions.Default(c))
 			cUser.BuyProduct(c.Param("productId"))
 
 			// redirect to user page
@@ -203,7 +204,7 @@ func main() {
 			})
 		} else {
 			// create comment
-			cUser := currentUser(sessions.Default(c))
+			cUser := currentUserIDOnly(sessions.Default(c))
 			cUser.CreateComment(c.Param("productId"), c.PostForm("content"))
 
 			// redirect to user page

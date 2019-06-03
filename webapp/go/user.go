@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -76,7 +75,6 @@ func (u *User) BuyingHistory() []Product {
 	data, found := cache.Get("buying_history_" + strconv.Itoa(u.ID))
 
 	if found {
-		fmt.Println("hit!!")
 		return data.([]Product)
 	}
 

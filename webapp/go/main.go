@@ -65,8 +65,6 @@ func main() {
 			session.Set("uid", user.ID)
 			session.Save()
 
-			user.UpdateLastLogin()
-
 			c.Redirect(http.StatusSeeOther, "/")
 		} else {
 			// 認証失敗

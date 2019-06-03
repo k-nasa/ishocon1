@@ -222,6 +222,11 @@ func main() {
 		db.Exec("DELETE FROM comments WHERE id > 200000")
 		db.Exec("DELETE FROM histories WHERE id > 500000")
 
+		db.Exec("SELECT * FROM users")
+		db.Exec("SELECT * FROM comments")
+		db.Exec("SELECT * FROM products")
+		db.Exec("SELECT * FROM histories")
+
 		c.String(http.StatusOK, "Finish")
 	})
 

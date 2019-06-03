@@ -2,7 +2,6 @@ package main
 
 import (
 	ca "github.com/patrickmn/go-cache"
-	"log"
 	"strconv"
 )
 

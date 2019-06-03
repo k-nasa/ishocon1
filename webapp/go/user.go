@@ -44,6 +44,20 @@ func getUser(uid int) User {
 	return u
 }
 
+func currentUserIDOnly(session sessions.Session) User {
+	u := User{}
+
+	id := session.Get("uid")
+	name := session.Get("name")
+
+	if id != nil && name != nil {
+		u.ID = id.(int)
+		u.Name = name.(string)
+	}
+
+	return u
+}
+
 func currentUser(session sessions.Session) User {
 	uid := session.Get("uid")
 	u := User{}

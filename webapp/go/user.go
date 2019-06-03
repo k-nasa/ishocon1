@@ -55,7 +55,7 @@ func currentUser(session sessions.Session) User {
 }
 
 // BuyingHistory : products which user had bought
-func (u *User) BuyingHistory() (products []Product) {
+func (u *User) BuyingHistory() []Product {
 	rows, err := db.Query(
 		"SELECT p.id, p.name, p.description, p.image_path, p.price, h.created_at "+
 			"FROM histories as h "+
@@ -66,6 +66,8 @@ func (u *User) BuyingHistory() (products []Product) {
 	if err != nil {
 		return nil
 	}
+
+	var products []Product
 
 	defer rows.Close()
 	for rows.Next() {
@@ -81,7 +83,7 @@ func (u *User) BuyingHistory() (products []Product) {
 		products = append(products, p)
 	}
 
-	return
+	return products
 }
 
 // BuyProduct : buy product

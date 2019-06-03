@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/contrib/sessions"
@@ -55,7 +57,15 @@ func currentUser(session sessions.Session) User {
 }
 
 // BuyingHistory : products which user had bought
-func (u *User) BuyingHistory() (products []Product) {
+func (u *User) BuyingHistory() []Product {
+
+	data, found := cache.Get("buying_history_" + strconv.Itoa(u.ID))
+
+	if found {
+		fmt.Println("hit!!")
+		return data.([]Product)
+	}
+
 	rows, err := db.Query(
 		"SELECT p.id, p.name, p.description, p.image_path, p.price, h.created_at "+
 			"FROM histories as h "+
@@ -66,6 +76,8 @@ func (u *User) BuyingHistory() (products []Product) {
 	if err != nil {
 		return nil
 	}
+
+	var products []Product
 
 	defer rows.Close()
 	for rows.Next() {
@@ -81,11 +93,15 @@ func (u *User) BuyingHistory() (products []Product) {
 		products = append(products, p)
 	}
 
-	return
+	cache.Set("buying_history_"+strconv.Itoa(u.ID), products, ca.DefaultExpiration)
+
+	return products
 }
 
 // BuyProduct : buy product
 func (u *User) BuyProduct(pid string) {
+	cache.Delete("buying_history_" + strconv.Itoa(u.ID))
+
 	db.Exec(
 		"INSERT INTO histories (product_id, user_id, created_at) VALUES (?, ?, ?)",
 		pid, u.ID, time.Now())
@@ -110,8 +126,4 @@ func (u *User) CreateComment(pid string, content string) {
 
 	cache.Set("product_count_"+pid, cnt, ca.DefaultExpiration)
 	cache.Delete("cWriters_" + pid)
-}
-
-func (u *User) UpdateLastLogin() {
-	db.Exec("UPDATE users SET last_login = ? WHERE id = ?", time.Now(), u.ID)
 }

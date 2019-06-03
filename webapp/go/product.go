@@ -35,12 +35,20 @@ type CommentWriter struct {
 }
 
 func getProduct(pid int) Product {
+	data, found := cache.Get("product_" + strconv.Itoa(pid))
+
+	if found {
+		return data.(Product)
+	}
+
 	p := Product{}
 	row := db.QueryRow("SELECT * FROM products WHERE id = ? LIMIT 1", pid)
 	err := row.Scan(&p.ID, &p.Name, &p.Description, &p.ImagePath, &p.Price, &p.CreatedAt)
 	if err != nil {
 		panic(err.Error())
 	}
+
+	cache.Set("product_"+strconv.Itoa(pid), p, ca.DefaultExpiration)
 
 	return p
 }
@@ -119,8 +127,7 @@ func cachedProductCommentCount(id int) int {
 
 func (p *Product) isBought(uid int) bool {
 	var count int
-	log.Print(uid)
-	log.Print(p.ID)
+
 	err := db.QueryRow(
 		"SELECT count(1) as count FROM histories WHERE product_id = ? AND user_id = ?",
 		p.ID, uid,

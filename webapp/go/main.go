@@ -164,7 +164,6 @@ func main() {
 	r.GET("/products/:productId", func(c *gin.Context) {
 		pid, _ := strconv.Atoi(c.Param("productId"))
 		product := getProduct(pid)
-		comments := getComments(pid)
 
 		cUser := currentUserIDOnly(sessions.Default(c))
 		bought := product.isBought(cUser.ID)
@@ -173,7 +172,6 @@ func main() {
 		c.HTML(http.StatusOK, "base", gin.H{
 			"CurrentUser":   cUser,
 			"Product":       product,
-			"Comments":      comments,
 			"AlreadyBought": bought,
 		})
 	})

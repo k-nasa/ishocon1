@@ -113,10 +113,13 @@ func (u *User) BuyingHistory() []Product {
 // BuyProduct : buy product
 func (u *User) BuyProduct(pid string) {
 	cache.Delete("buying_history_" + strconv.Itoa(u.ID))
+	cache.Delete("totalPay_" + strconv.Itoa(u.ID))
 
 	db.Exec(
 		"INSERT INTO histories (product_id, user_id, created_at) VALUES (?, ?, ?)",
 		pid, u.ID, time.Now())
+
+	u.BuyingHistory()
 }
 
 // CreateComment : create comment to the product

@@ -115,11 +115,10 @@ func cachedProductCommentCount(id int) int {
 		if cnterr != nil {
 			cnt = 0
 		}
+		cache.Set("product_count_"+strconv.Itoa(id), cnt, ca.DefaultExpiration)
 	} else {
 		cnt = data.(int)
 	}
-
-	cache.Set("product_count_"+strconv.Itoa(id), cnt, ca.DefaultExpiration)
 
 	return cnt
 }

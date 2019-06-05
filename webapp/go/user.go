@@ -78,13 +78,8 @@ func (u *User) BuyingHistory() []Product {
 		return data.([]Product)
 	}
 
-	rows, err := db.Query(
-		"SELECT p.id, p.name, p.description, p.image_path, p.price, h.created_at "+
-			"FROM histories as h "+
-			"LEFT OUTER JOIN products as p "+
-			"ON h.product_id = p.id "+
-			"WHERE h.user_id = ? "+
-			"ORDER BY h.id DESC", u.ID)
+	rows, err := db.Query("select p.id, p.name, p.description, p.image_path, p.price, h.created_at FROM products as p INNER JOIN histories as h ON p.id = h.product_id WHERE h.user_id = ? ORDER BY h.id DESC", u.ID)
+
 	if err != nil {
 		return nil
 	}
@@ -113,10 +108,13 @@ func (u *User) BuyingHistory() []Product {
 // BuyProduct : buy product
 func (u *User) BuyProduct(pid string) {
 	cache.Delete("buying_history_" + strconv.Itoa(u.ID))
+	cache.Delete("totalPay_" + strconv.Itoa(u.ID))
 
 	db.Exec(
 		"INSERT INTO histories (product_id, user_id, created_at) VALUES (?, ?, ?)",
 		pid, u.ID, time.Now())
+
+	u.BuyingHistory()
 }
 
 // CreateComment : create comment to the product

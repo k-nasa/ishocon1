@@ -131,25 +131,31 @@ func main() {
 
 		products := user.BuyingHistory()
 
+		data, found := cache.Get("totalPay_" + strconv.Itoa(uid))
+
 		var totalPay int
-		for _, p := range products {
-			totalPay += p.Price
+
+		if !found {
+			for _, p := range products {
+				totalPay += p.Price
+			}
+			cache.Set("totalPay_"+strconv.Itoa(uid), totalPay, ca.DefaultExpiration)
+		} else {
+			totalPay = data.(int)
 		}
 
 		// shorten description
-		var sdProducts []Product
-		for _, p := range products {
+		for i, p := range products {
 			if utf8.RuneCountInString(p.Description) > 70 {
-				p.Description = string([]rune(p.Description)[:70]) + "…"
+				products[i].Description = string([]rune(p.Description)[:70]) + "…"
 			}
-			sdProducts = append(sdProducts, p)
 		}
 
 		r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/mypage.tmpl")))
 		c.HTML(http.StatusOK, "base", gin.H{
 			"CurrentUser": cUser,
 			"User":        user,
-			"Products":    sdProducts,
+			"Products":    products,
 			"TotalPay":    totalPay,
 		})
 	})
@@ -158,7 +164,6 @@ func main() {
 	r.GET("/products/:productId", func(c *gin.Context) {
 		pid, _ := strconv.Atoi(c.Param("productId"))
 		product := getProduct(pid)
-		comments := getComments(pid)
 
 		cUser := currentUserIDOnly(sessions.Default(c))
 		bought := product.isBought(cUser.ID)
@@ -167,7 +172,6 @@ func main() {
 		c.HTML(http.StatusOK, "base", gin.H{
 			"CurrentUser":   cUser,
 			"Product":       product,
-			"Comments":      comments,
 			"AlreadyBought": bought,
 		})
 	})

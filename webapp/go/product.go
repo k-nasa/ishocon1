@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	ca "github.com/patrickmn/go-cache"
 	"strconv"
 )
@@ -54,8 +55,29 @@ func getProduct(pid int) Product {
 
 func getProductsWithCommentsAt(page int) []ProductWithComments {
 	// select 50 products with offset page*50
+	id_rows, err := db.Query("SELECT id FROM products ORDER BY id DESC LIMIT 50 OFFSET ?", page*50)
+	if err != nil {
+		return nil
+	}
+
+	var ids []int
+	defer id_rows.Close()
+	for id_rows.Next() {
+		var id int
+		err = id_rows.Scan(&id)
+		ids = append(ids, id)
+	}
+
+	var s string
+	for _, v := range ids {
+		s = s + strconv.Itoa(v) + ","
+	}
+	s = s + "0"
+
 	products := []ProductWithComments{}
-	rows, err := db.Query("SELECT * FROM products ORDER BY id DESC LIMIT 50 OFFSET ?", page*50)
+	rows, err := db.Query("SELECT * FROM products WHERE id IN (" + s + ") ORDER BY id DESC")
+	fmt.Println("")
+
 	if err != nil {
 		return nil
 	}

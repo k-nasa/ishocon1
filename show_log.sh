@@ -1,1 +1,1 @@
-sudo cat /var/log/nginx/access.log | alp --aggregates "users/\d+,products/\d+, products/buy/\d+, comments/\d+, images/" --ave --sum
+sudo cat /var/log/nginx/access.log | alp --aggregates "users/,products/, products/buy/, comments/, images/" --ave
